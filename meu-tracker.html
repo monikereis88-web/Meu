@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#fce7f3"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Meu Tracker"/>
+<title>Meu Tracker</title>
+<link rel="manifest" id="manifest-placeholder"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --pink-50: #fff0f6;
+    --pink-100: #ffe0ee;
+    --pink-200: #ffc2d9;
+    --pink-300: #ff9abf;
+    --pink-400: #f472a8;
+    --pink-500: #ec4899;
+    --pink-600: #db2777;
+    --pink-light: #fdf2f8;
+    --text-dark: #4a1942;
+    --text-mid: #9d5c8a;
+    --text-light: #c9a0bb;
+    --white: #ffffff;
+    --shadow: 0 2px 16px rgba(236,72,153,0.08);
+    --radius: 20px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Nunito', sans-serif; background: var(--pink-50); color: var(--text-dark); min-height: 100vh; padding-bottom: 90px; }
+
+  /* HEADER */
+  .header { background: var(--white); border-bottom: 1px solid var(--pink-100); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+  .header-name { font-size: 18px; font-weight: 800; color: var(--text-dark); }
+  .header-sub { font-size: 11px; color: var(--text-light); font-weight: 600; }
+  .btn-settings { width: 38px; height: 38px; background: var(--pink-50); border-radius: 50%; border: none; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+  /* TABS */
+  .tab-content { display: none; padding: 16px; }
+  .tab-content.active { display: block; }
+
+  /* BOTTOM NAV */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); border-top: 1px solid var(--pink-100); display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); z-index: 100; }
+  .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; cursor: pointer; padding: 4px 16px; color: var(--text-light); font-family: 'Nunito', sans-serif; }
+  .nav-btn.active { color: var(--pink-500); }
+  .nav-btn .icon { font-size: 22px; }
+  .nav-btn .label { font-size: 11px; font-weight: 700; }
+
+  /* CARDS */
+  .card { background: var(--white); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); margin-bottom: 12px; }
+  .card-title { font-size: 13px; font-weight: 800; color: var(--text-mid); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+  /* STAT GRID */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .stat-card { background: var(--white); border-radius: 16px; padding: 14px; box-shadow: var(--shadow); border-left: 4px solid var(--pink-200); }
+  .stat-card.green { border-left-color: #86efac; }
+  .stat-card.rose { border-left-color: var(--pink-400); }
+  .stat-card.violet { border-left-color: #c4b5fd; }
+  .stat-card.blue { border-left-color: #93c5fd; }
+  .stat-label { font-size: 10px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-value { font-size: 22px; font-weight: 900; color: var(--text-dark); margin: 4px 0 2px; }
+  .stat-sub { font-size: 10px; color: var(--text-light); font-weight: 600; }
+
+  /* ALERT */
+  .alert { border-radius: var(--radius); padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .alert.warn { background: #fff0f4; border: 1.5px solid var(--pink-200); }
+  .alert.ok { background: #f0fdf4; border: 1.5px solid #86efac; }
+  .alert-icon { font-size: 26px; }
+  .alert-title { font-size: 13px; font-weight: 800; color: var(--text-dark); }
+  .alert-sub { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+
+  /* WATER */
+  .water-bars { display: flex; gap: 4px; margin: 10px 0; }
+  .water-bar { height: 28px; flex: 1; border-radius: 8px; background: var(--pink-100); transition: background 0.3s; }
+  .water-bar.filled { background: var(--pink-300); }
+  .water-actions { display: flex; gap: 8px; }
+  .btn-minus { flex: 1; padding: 10px; border-radius: 14px; border: none; background: var(--pink-50); color: var(--text-mid); font-size: 20px; font-weight: 800; cursor: pointer; font-family: 'Nunito', sans-serif; }
+  .btn-plus { flex: 2; padding: 10px; border-radius: 14px; border: none; background: var(--pink-300); color: var(--white); font-size: 14px; font-weight: 800; cursor: pointer; font-family: 'Nunito', sans-serif; }
+  .btn-plus:active { background: var(--pink-400); }
+
+  /* BADGE */
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 99px; background: var(--pink-100); color: var(--pink-500); }
+
+  /* FORM */
+  .form-label { font-size: 11px; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; margin-top: 12px; }
+  .form-input { width: 100%; border: 1.5px solid var(--pink-100); border-radius: 14px; padding: 10px 14px; font-size: 14px; font-family: 'Nunito', sans-serif; color: var(--text-dark); background: var(--pink-50); outline: none; transition: border 0.2s; }
+  .form-input:focus { border-color: var(--pink-300); background: var(--white); }
+
+  /* BUTTONS */
+  .btn-primary { width: 100%; padding: 14px; border-radius: 16px; border: none; background: linear-gradient(135deg, var(--pink-400), var(--pink-500)); color: var(--white); font-size: 15px; font-weight: 800; font-family: 'Nunito', sans-serif; cursor: pointer; margin-top: 14px; letter-spacing: 0.02em; }
+  .btn-primary:active { opacity: 0.85; }
+  .btn-violet { background: linear-gradient(135deg, #c084fc, #a855f7); }
+
+  /* HISTORY LIST */
+  .history-item { background: var(--white); border-radius: 16px; padding: 12px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); }
+  .history-main { font-size: 16px; font-weight: 800; color: var(--text-dark); }
+  .history-sub { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+  .history-date { font-size: 11px; color: var(--text-light); font-weight: 700; }
+
+  /* SETUP SCREEN */
+  .setup-screen { min-height: 100vh; background: linear-gradient(160deg, #fce7f3 0%, #fdf2f8 100%); display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .setup-card { background: var(--white); border-radius: 28px; padding: 28px 24px; width: 100%; max-width: 400px; box-shadow: 0 8px 40px rgba(236,72,153,0.12); }
+  .setup-title { text-align: center; font-size: 24px; font-weight: 900; color: var(--text-dark); margin-bottom: 4px; }
+  .setup-sub { text-align: center; font-size: 13px; color: var(--text-light); margin-bottom: 20px; }
+
+  /* PROX APLICACAO */
+  .prox-card { background: linear-gradient(135deg, #fdf2f8, #fce7f3); border: 1.5px solid var(--pink-200); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .prox-label { font-size: 12px; font-weight: 800; color: var(--pink-500); }
+  .prox-date { font-size: 22px; font-weight: 900; color: var(--text-dark); margin: 4px 0 2px; }
+  .prox-sub { font-size: 11px; color: var(--text-light); }
+
+  .empty-state { text-align: center; color: var(--text-light); font-size: 13px; font-weight: 600; padding: 32px 16px; }
+
+  canvas { max-height: 180px; }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen" class="setup-screen" style="display:none;">
+  <div class="setup-card">
+    <div style="text-align:center;font-size:40px;margin-bottom:8px;">💊</div>
+    <div class="setup-title">Meu Tracker</div>
+    <div class="setup-sub">Configure seu perfil para começar</div>
+    <label class="form-label">Seu nome</label>
+    <input class="form-input" id="s-name" type="text" placeholder="Como posso te chamar?"/>
+    <label class="form-label">Altura (cm)</label>
+    <input class="form-input" id="s-altura" type="number" placeholder="Ex: 165"/>
+    <label class="form-label">Peso inicial (kg)</label>
+    <input class="form-input" id="s-peso-inicial" type="number" placeholder="Ex: 85.0"/>
+    <label class="form-label">Peso meta (kg)</label>
+    <input class="form-input" id="s-peso-meta" type="number" placeholder="Ex: 70.0"/>
+    <label class="form-label">Dosagem atual</label>
+    <input class="form-input" id="s-dosagem" type="text" placeholder="Ex: 0.5mg"/>
+    <label class="form-label">Data de início</label>
+    <input class="form-input" id="s-data-inicio" type="date"/>
+    <label class="form-label">Ano de nascimento</label>
+    <input class="form-input" id="s-ano" type="number" placeholder="Ex: 1990"/>
+    <button class="btn-primary" onclick="saveProfile()">Salvar e começar →</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" style="display:none;">
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="header-sub">Olá,</div>
+      <div class="header-name" id="header-name">você 👋</div>
+    </div>
+    <button class="btn-settings" onclick="openProfile()">⚙️</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="tab-dash" class="tab-content active">
+    <div id="alert-aplicacao"></div>
+    <div class="stat-grid">
+      <div class="stat-card green">
+        <div class="stat-label">Peso atual</div>
+        <div class="stat-value" id="peso-atual">—</div>
+        <div class="stat-sub" id="peso-meta-sub">—</div>
+      </div>
+      <div class="stat-card rose">
+        <div class="stat-label">Perdeu</div>
+        <div class="stat-value" id="perda-total">—</div>
+        <div class="stat-sub">desde o início</div>
+      </div>
+      <div class="stat-card violet">
+        <div class="stat-label">IMC</div>
+        <div class="stat-value" id="imc-val">—</div>
+        <div class="stat-sub" id="imc-label">—</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">Dosagem</div>
+        <div class="stat-value" id="dosagem-stat" style="font-size:16px;padding-top:4px;">—</div>
+        <div class="stat-sub">atual</div>
+      </div>
+    </div>
+
+    <!-- Água -->
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between;">
+        <span>💧 Água hoje</span>
+        <span class="badge" id="agua-badge">0/8 copos</span>
+      </div>
+      <div class="water-bars" id="water-bars"></div>
+      <div class="water-actions">
+        <button class="btn-minus" onclick="removeAgua()">−</button>
+        <button class="btn-plus" onclick="addAgua()">+ Copo</button>
+      </div>
+    </div>
+
+    <!-- Gráfico -->
+    <div class="card" id="chart-card">
+      <div class="card-title">📈 Evolução do peso</div>
+      <canvas id="peso-chart"></canvas>
+    </div>
+    <div class="empty-state" id="chart-empty" style="display:none;">Registre seu primeiro peso na aba <strong>Peso</strong> para ver o gráfico!</div>
+  </div>
+
+  <!-- PESO -->
+  <div id="tab-registros" class="tab-content">
+    <div class="card">
+      <div class="card-title">⚖️ Registrar peso</div>
+      <label class="form-label">Peso atual (kg)</label>
+      <input class="form-input" id="peso-input" type="number" placeholder="Ex: 82.5"/>
+      <label class="form-label">Nota (opcional)</label>
+      <input class="form-input" id="nota-input" type="text" placeholder="Ex: após treino"/>
+      <button class="btn-primary" onclick="addPeso()">Salvar registro</button>
+    </div>
+    <div id="registros-list"></div>
+  </div>
+
+  <!-- DOSES -->
+  <div id="tab-aplicacoes" class="tab-content">
+    <div class="card">
+      <div class="card-title">💉 Registrar aplicação</div>
+      <label class="form-label">Dosagem</label>
+      <input class="form-input" id="dose-input" type="text" id="dose-input" placeholder="Deixe em branco para usar a padrão"/>
+      <div style="font-size:11px;color:var(--text-light);margin-top:6px;">Data de hoje: <strong id="dose-data-hoje"></strong></div>
+      <button class="btn-primary btn-violet" onclick="registrarAplicacao()">Registrar agora</button>
+    </div>
+    <div class="prox-card" id="prox-card" style="display:none;">
+      <div class="prox-label">📅 Próxima aplicação</div>
+      <div class="prox-date" id="prox-date">—</div>
+      <div class="prox-sub">7 dias após a última dose</div>
+    </div>
+    <div id="aplicacoes-list"></div>
+  </div>
+
+</div>
+
+<!-- NAV -->
+<div class="bottom-nav" id="bottom-nav" style="display:none;">
+  <button class="nav-btn active" onclick="switchTab('dash',this)">
+    <span class="icon">📊</span><span class="label">Dashboard</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('registros',this)">
+    <span class="icon">⚖️</span><span class="label">Peso</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('aplicacoes',this)">
+    <span class="icon">💉</span><span class="label">Doses</span>
+  </button>
+</div>
+
+<script>
+  let state = {
+    profile: { name:'', altura:'', pesoInicial:'', pesoMeta:'', dosagem:'', dataInicio: today(), anoNascimento:'' },
+    registros: [],
+    aplicacoes: [],
+    aguaDiaria: [],
+    configured: false,
+    coposMeta: 8
+  };
+
+  let chartInstance = null;
+
+  function today() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  function load() {
+    try { const d = localStorage.getItem('meu_tracker_v1'); if(d) state = JSON.parse(d); } catch{}
+  }
+
+  function save() {
+    try { localStorage.setItem('meu_tracker_v1', JSON.stringify(state)); } catch{}
+  }
+
+  function calcIMC(peso, altura) {
+    if(!peso||!altura) return null;
+    const h = parseFloat(altura)/100;
+    return (parseFloat(peso)/(h*h)).toFixed(1);
+  }
+
+  function imcLabel(v) {
+    if(!v) return '';
+    v = parseFloat(v);
+    if(v<18.5) return 'Abaixo do peso';
+    if(v<25) return 'Peso normal';
+    if(v<30) return 'Sobrepeso';
+    return 'Obesidade';
+  }
+
+  function pesoAtual() {
+    if(state.registros.length===0) return state.profile.pesoInicial||null;
+    return state.registros[state.registros.length-1].peso;
+  }
+
+  function perdaTotal() {
+    const i = parseFloat(state.profile.pesoInicial);
+    const a = parseFloat(pesoAtual());
+    if(!i||!a) return null;
+    return (i-a).toFixed(1);
+  }
+
+  function coposHoje() {
+    const t = today();
+    const r = state.aguaDiaria.find(x=>x.data===t);
+    return r ? r.copos : 0;
+  }
+
+  function ultimaAplicacao() {
+    if(state.aplicacoes.length===0) return null;
+    return state.aplicacoes[state.aplicacoes.length-1];
+  }
+
+  function proximaAplicacao() {
+    const u = ultimaAplicacao();
+    if(!u) return null;
+    const d = new Date(u.data+'T12:00:00');
+    d.setDate(d.getDate()+7);
+    return d.toISOString().split('T')[0];
+  }
+
+  function diasParaProxima() {
+    const p = proximaAplicacao();
+    if(!p) return null;
+    const d1 = new Date(today()+'T12:00:00');
+    const d2 = new Date(p+'T12:00:00');
+    return Math.round((d2-d1)/(1000*60*60*24));
+  }
+
+  function formatDate(d) {
+    const [y,m,day] = d.split('-');
+    return `${day}/${m}/${y}`;
+  }
+
+  function renderDash() {
+    const pa = pesoAtual();
+    document.getElementById('peso-atual').textContent = pa ? pa+' kg' : '—';
+    document.getElementById('peso-meta-sub').textContent = state.profile.pesoMeta ? 'Meta: '+state.profile.pesoMeta+' kg' : '—';
+
+    const perda = perdaTotal();
+    if(perda!==null) {
+      const v = parseFloat(perda);
+      document.getElementById('perda-total').textContent = (v>0?'-':'+') + Math.abs(v) + ' kg';
+    } else {
+      document.getElementById('perda-total').textContent = '—';
+    }
+
+    const imc = calcIMC(pa, state.profile.altura);
+    document.getElementById('imc-val').textContent = imc||'—';
+    document.getElementById('imc-label').textContent = imcLabel(imc);
+
+    document.getElementById('dosagem-stat').textContent = state.profile.dosagem||'—';
+
+    // alert aplicação
+    const dias = diasParaProxima();
+    const alertEl = document.getElementById('alert-aplicacao');
+    if(dias!==null) {
+      const warn = dias<=1;
+      let msg = dias===0 ? 'Dia de aplicação hoje!' : dias===1 ? 'Aplicação amanhã!' : `Próxima aplicação em ${dias} dias`;
+      alertEl.innerHTML = `<div class="alert ${warn?'warn':'ok'}">
+        <span class="alert-icon">${warn?'⚠️':'💉'}</span>
+        <div><div class="alert-title">${msg}</div>
+        <div class="alert-sub">Dosagem: ${ultimaAplicacao()?.dosagem||state.profile.dosagem||'—'}</div></div>
+      </div>`;
+    } else {
+      alertEl.innerHTML = '';
+    }
+
+    // água
+    const copos = coposHoje();
+    const meta = state.coposMeta;
+    document.getElementById('agua-badge').textContent = `${copos}/${meta} copos`;
+    const bars = document.getElementById('water-bars');
+    bars.innerHTML = '';
+    for(let i=0;i<meta;i++) {
+      const b = document.createElement('div');
+      b.className = 'water-bar'+(i<copos?' filled':'');
+      bars.appendChild(b);
+    }
+
+    // chart
+    const dados = state.registros.slice(-12);
+    if(dados.length>1) {
+      document.getElementById('chart-card').style.display='block';
+      document.getElementById('chart-empty').style.display='none';
+      const labels = dados.map(r=>r.data.slice(5));
+      const values = dados.map(r=>r.peso);
+      if(chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(document.getElementById('peso-chart'), {
+        type:'line',
+        data:{
+          labels,
+          datasets:[{
+            label:'Peso (kg)',
+            data: values,
+            borderColor:'#f472b6',
+            backgroundColor:'rgba(244,114,182,0.12)',
+            borderWidth:2.5,
+            pointBackgroundColor:'#ec4899',
+            pointRadius:5,
+            tension:0.3,
+            fill:true
+          }]
+        },
+        options:{
+          responsive:true,
+          plugins:{
+            legend:{display:false},
+            tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y} kg`}}
+          },
+          scales:{
+            y:{
+              ticks:{font:{size:11},color:'#c9a0bb'},
+              grid:{color:'#fce7f3'}
+            },
+            x:{
+              ticks:{font:{size:10},color:'#c9a0bb'},
+              grid:{display:false}
+            }
+          },
+          animation:{duration:600}
+        }
+      });
+    } else {
+      document.getElementById('chart-card').style.display='none';
+      document.getElementById('chart-empty').style.display='block';
+    }
+  }
+
+  function renderRegistros() {
+    const el = document.getElementById('registros-list');
+    const lista = [...state.registros].reverse();
+    if(lista.length===0){ el.innerHTML='<div class="empty-state">Nenhum registro ainda.</div>'; return; }
+    el.innerHTML = lista.map(r=>`
+      <div class="history-item">
+        <div>
+          <div class="history-main">${r.peso} kg</div>
+          ${r.nota?`<div class="history-sub">${r.nota}</div>`:''}
+        </div>
+        <div class="history-date">${formatDate(r.data)}</div>
+      </div>`).join('');
+  }
+
+  function renderAplicacoes() {
+    document.getElementById('dose-data-hoje').textContent = formatDate(today());
+    const prox = proximaAplicacao();
+    const proxCard = document.getElementById('prox-card');
+    if(prox){ proxCard.style.display='block'; document.getElementById('prox-date').textContent=formatDate(prox); }
+    else proxCard.style.display='none';
+
+    const el = document.getElementById('aplicacoes-list');
+    const lista = [...state.aplicacoes].reverse();
+    if(lista.length===0){ el.innerHTML='<div class="empty-state">Nenhuma aplicação registrada.</div>'; return; }
+    el.innerHTML = lista.map(a=>`
+      <div class="history-item">
+        <div>
+          <div class="history-main">💉 ${a.dosagem}</div>
+          <div class="history-sub">aplicado</div>
+        </div>
+        <div class="history-date">${formatDate(a.data)}</div>
+      </div>`).join('');
+  }
+
+  function renderAll() {
+    document.getElementById('header-name').textContent = (state.profile.name||'você')+' 👋';
+    renderDash();
+    renderRegistros();
+    renderAplicacoes();
+  }
+
+  function switchTab(id, btn) {
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+    document.getElementById('tab-'+id).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    if(id==='dash') renderDash();
+    if(id==='registros') renderRegistros();
+    if(id==='aplicacoes') renderAplicacoes();
+  }
+
+  function addPeso() {
+    const v = document.getElementById('peso-input').value;
+    if(!v) return;
+    const nota = document.getElementById('nota-input').value;
+    state.registros.push({data:today(), peso:parseFloat(v), nota});
+    save(); renderAll();
+    document.getElementById('peso-input').value='';
+    document.getElementById('nota-input').value='';
+    alert('✅ Peso registrado!');
+  }
+
+  function addAgua() {
+    const c = coposHoje();
+    if(c>=state.coposMeta) return;
+    const t = today();
+    state.aguaDiaria = state.aguaDiaria.filter(r=>r.data!==t);
+    state.aguaDiaria.push({data:t,copos:c+1});
+    save(); renderDash();
+  }
+
+  function removeAgua() {
+    const c = coposHoje();
+    if(c===0) return;
+    const t = today();
+    state.aguaDiaria = state.aguaDiaria.filter(r=>r.data!==t);
+    state.aguaDiaria.push({data:t,copos:c-1});
+    save(); renderDash();
+  }
+
+  function registrarAplicacao() {
+    const d = document.getElementById('dose-input').value||state.profile.dosagem;
+    state.aplicacoes.push({data:today(),dosagem:d});
+    save(); renderAplicacoes(); renderDash();
+    document.getElementById('dose-input').value='';
+    alert('✅ Aplicação registrada!');
+  }
+
+  function saveProfile() {
+    const p = state.profile;
+    p.name = document.getElementById('s-name').value;
+    p.altura = document.getElementById('s-altura').value;
+    p.pesoInicial = document.getElementById('s-peso-inicial').value;
+    p.pesoMeta = document.getElementById('s-peso-meta').value;
+    p.dosagem = document.getElementById('s-dosagem').value;
+    p.dataInicio = document.getElementById('s-data-inicio').value;
+    p.anoNascimento = document.getElementById('s-ano').value;
+    state.configured = true;
+    save();
+    document.getElementById('setup-screen').style.display='none';
+    document.getElementById('main-app').style.display='block';
+    document.getElementById('bottom-nav').style.display='flex';
+    renderAll();
+  }
+
+  function openProfile() {
+    const p = state.profile;
+    document.getElementById('s-name').value=p.name||'';
+    document.getElementById('s-altura').value=p.altura||'';
+    document.getElementById('s-peso-inicial').value=p.pesoInicial||'';
+    document.getElementById('s-peso-meta').value=p.pesoMeta||'';
+    document.getElementById('s-dosagem').value=p.dosagem||'';
+    document.getElementById('s-data-inicio').value=p.dataInicio||today();
+    document.getElementById('s-ano').value=p.anoNascimento||'';
+    document.getElementById('main-app').style.display='none';
+    document.getElementById('bottom-nav').style.display='none';
+    document.getElementById('setup-screen').style.display='flex';
+  }
+
+  // INIT
+  load();
+  if(state.configured) {
+    document.getElementById('setup-screen').style.display='none';
+    document.getElementById('main-app').style.display='block';
+    document.getElementById('bottom-nav').style.display='flex';
+    // set default date
+    document.getElementById('s-data-inicio').value = state.profile.dataInicio||today();
+    renderAll();
+  } else {
+    document.getElementById('setup-screen').style.display='flex';
+    document.getElementById('s-data-inicio').value = today();
+  }
+</script>
+</body>
+</html>
